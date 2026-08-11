@@ -1,0 +1,6 @@
+{
+  "name": "Reservoir Fluid Calculator",
+  "description": "Comprehensive petroleum reservoir engineering calculator featuring advanced PVT properties (gas compositions, Standing black oil correlations) and Fluid Flow deliverability (Darcy radial flow law, Vogel two-phase IPR curves, skin factor analytics).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

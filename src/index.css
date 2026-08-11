@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@import "katex/dist/katex.min.css";
+
+:root {
+  --f-serif: 'Times New Roman', Times, 'Georgia', serif;
+  --f-sans: 'Times New Roman', Times, 'Georgia', serif;
+  --f-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  font-family: var(--f-serif);
+}
+
+* {
+  font-family: var(--f-serif);
+}
+
+.font-mono, code, pre, .katex {
+  font-family: var(--f-mono) !important;
+}
+
+.serif {
+  font-family: var(--f-serif);
+  font-style: normal;
+}
+
+/* KaTeX custom override for high contrast & crisp math typography */
+.katex {
+  color: inherit !important;
+  font-size: 1.05em !important;
+}
+
+.katex-display {
+  margin: 0.5em 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+}
+
+.katex-display > .katex {
+  white-space: normal;
+}
+
+/* Sleek custom scrollbars for laptop & desktop views */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.5);
+}
+
