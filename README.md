@@ -87,7 +87,30 @@ An industrial-grade, full-stack React + TypeScript petroleum engineering softwar
 
 ---
 
-## 🚀 Setup & Local Execution Instructions
+## 🐍 Streamlit Python Deployment Guide
+
+This repository includes a native **Streamlit Python application** (`app.py`, `streamlit_app.py`, `requirements.txt`) containing the complete petroleum engineering calculation engine and interactive Plotly figures.
+
+### 1. Direct Deployment to Streamlit Cloud (1-Click)
+1. Push or fork this repository to your **GitHub** account.
+2. Sign in to **[Streamlit Community Cloud](https://share.streamlit.io/)**.
+3. Click **New App**, select your repository, and set:
+   - **Main file path**: `app.py` or `streamlit_app.py`
+   - **Python Version**: 3.10+
+4. Click **Deploy!** Streamlit Cloud automatically detects `requirements.txt` and launches the application.
+
+### 2. Local Python Streamlit Execution
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Run Streamlit App locally
+streamlit run app.py
+```
+
+---
+
+## 🚀 React + Node Setup & Execution Instructions
 
 ### Prerequisites
 - Node.js version 18.0 or higher

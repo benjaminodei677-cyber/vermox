@@ -103,3 +103,14 @@ Click the **Export PDF Report** button in the header to open the publication gen
 - Customize engineer metadata, company name, well ID, and project notes.
 - Select included sections (PVT Summary, EOS Coefficients, IPR Curve Points, Gas Composition Breakdown).
 - Print or save a formatted, audit-ready engineering document.
+
+---
+
+## 6. Streamlit Python Cloud Deployment
+
+This repository includes a standalone Streamlit Python app (`app.py`, `streamlit_app.py`, `requirements.txt`) ready for 1-click deployment on Streamlit Community Cloud:
+1. Push this codebase to GitHub.
+2. Go to **[share.streamlit.io](https://share.streamlit.io/)** and connect your repository.
+3. Select `app.py` or `streamlit_app.py` as the main entry point.
+4. Streamlit will install `requirements.txt` and host your petroleum application live on Python!
+
