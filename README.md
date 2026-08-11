@@ -4,6 +4,21 @@ An industrial-grade, full-stack React + TypeScript petroleum engineering softwar
 
 ---
 
+## ⚡ Deploying the Full React Web App to Vercel (Recommended)
+
+To deploy the **React + TypeScript web application** with the custom UI on **Vercel**:
+
+1. Go to **[vercel.com](https://vercel.com)** and log in with your GitHub account.
+2. Click **"Add New..."** $\rightarrow$ **"Project"**.
+3. Import your GitHub repository (`benjaminodei677-cyber/vermox`).
+4. Vercel will automatically detect **Vite** and `vercel.json`:
+   - **Framework Preset**: Vite
+   - **Build Command**: `vite build`
+   - **Output Directory**: `dist`
+5. Click **Deploy**. Your application will be live in ~30 seconds with a custom URL!
+
+---
+
 ## 🛠️ Architecture & Tech Stack
 
 - **Frontend**: React 18, TypeScript, Tailwind CSS, Lucide React Icons, Motion (Framer Motion)

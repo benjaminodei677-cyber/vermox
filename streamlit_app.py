@@ -2,9 +2,12 @@ import math
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import streamlit as st
 
-# Set Streamlit Page Configuration
+# ==============================================================================
+# 1. STREAMLIT PAGE CONFIG & CUSTOM CSS (MATCHING REACT DARK PREVIEW DESIGN)
+# ==============================================================================
 st.set_page_config(
     page_title="Petroleum Engineering Suite v3.2",
     page_icon="⛽",
@@ -12,26 +15,156 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- THERMODYNAMIC CONSTANTS & GAS COMPONENTS LIBRARY ---
+# Custom High-End Dark Glass Theme CSS
+st.markdown("""
+<style>
+    /* Dark Slate Body Background */
+    .stApp {
+        background-color: #0f172a;
+        color: #f8fafc;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    /* Header Card */
+    .header-card {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    }
+    .header-title {
+        color: #f59e0b;
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .header-subtitle {
+        color: #94a3b8;
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+    }
+
+    /* Metric Cards */
+    div[data-testid="stMetric"] {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        border-color: #f59e0b;
+        transform: translateY(-2px);
+    }
+    div[data-testid="stMetric"] label {
+        color: #94a3b8 !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    div[data-testid="stMetricValue"] {
+        color: #f59e0b !important;
+        font-size: 1.5rem !important;
+        font-weight: 700 !important;
+    }
+
+    /* Sidebar Custom Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #1e293b;
+        border-right: 1px solid #334155;
+    }
+    section[data-testid="stSidebar"] .stMarkdown h1, 
+    section[data-testid="stSidebar"] .stMarkdown h2, 
+    section[data-testid="stSidebar"] .stMarkdown h3 {
+        color: #f8fafc;
+    }
+
+    /* Custom Tabs Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #1e293b;
+        padding: 6px;
+        border-radius: 10px;
+        border: 1px solid #334155;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: #94a3b8;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 8px 18px;
+        border: none;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #f59e0b !important;
+        color: #0f172a !important;
+        font-weight: 700 !important;
+    }
+
+    /* Card Containers */
+    .content-card {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    /* Custom Badges */
+    .amber-badge {
+        background-color: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        padding: 0.25rem 0.65rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .emerald-badge {
+        background-color: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        padding: 0.25rem 0.65rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    /* Hide Streamlit Default Menu Noise */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
+
+# ==============================================================================
+# 2. THERMODYNAMIC CONSTANTS & GAS COMPONENTS DATA
+# ==============================================================================
 R_CONST = 10.7316  # (psia * ft3) / (lb-mol * °R)
 AIR_MOL_WEIGHT = 28.966  # lb/lb-mol
 
 GAS_COMPONENTS = [
-    {"id": "c1", "name": "Methane (C1)", "formula": "CH4", "mw": 16.043, "tc": 343.0, "pc": 666.4, "defaultY": 0.820},
-    {"id": "c2", "name": "Ethane (C2)", "formula": "C2H6", "mw": 30.070, "tc": 549.6, "pc": 706.5, "defaultY": 0.060},
-    {"id": "c3", "name": "Propane (C3)", "formula": "C3H8", "mw": 44.097, "tc": 665.7, "pc": 616.0, "defaultY": 0.030},
-    {"id": "ic4", "name": "i-Butane (iC4)", "formula": "iC4H10", "mw": 58.123, "tc": 734.1, "pc": 527.9, "defaultY": 0.008},
-    {"id": "nc4", "name": "n-Butane (nC4)", "formula": "nC4H10", "mw": 58.123, "tc": 765.3, "pc": 550.6, "defaultY": 0.012},
-    {"id": "ic5", "name": "i-Pentane (iC5)", "formula": "iC5H12", "mw": 72.150, "tc": 828.8, "pc": 490.4, "defaultY": 0.005},
-    {"id": "nc5", "name": "n-Pentane (nC5)", "formula": "nC5H12", "mw": 72.150, "tc": 845.4, "pc": 488.6, "defaultY": 0.005},
-    {"id": "c6", "name": "Hexanes (C6)", "formula": "C6H14", "mw": 86.177, "tc": 913.4, "pc": 436.9, "defaultY": 0.006},
-    {"id": "n2", "name": "Nitrogen (N2)", "formula": "N2", "mw": 28.013, "tc": 227.3, "pc": 493.1, "defaultY": 0.014},
-    {"id": "co2", "name": "Carbon Dioxide (CO2)", "formula": "CO2", "mw": 44.010, "tc": 547.6, "pc": 1070.6, "defaultY": 0.015},
-    {"id": "h2s", "name": "Hydrogen Sulfide (H2S)", "formula": "H2S", "mw": 34.082, "tc": 672.4, "pc": 1306.0, "defaultY": 0.005},
-    {"id": "c7plus", "name": "Heptanes Plus (C7+)", "formula": "C7+", "mw": 145.0, "tc": 1050.0, "pc": 380.0, "defaultY": 0.020},
+    {"id": "c1", "name": "Methane (C1)", "formula": "CH4", "mw": 16.043, "tc": 343.0, "pc": 666.4},
+    {"id": "c2", "name": "Ethane (C2)", "formula": "C2H6", "mw": 30.070, "tc": 549.6, "pc": 706.5},
+    {"id": "c3", "name": "Propane (C3)", "formula": "C3H8", "mw": 44.097, "tc": 665.7, "pc": 616.0},
+    {"id": "ic4", "name": "i-Butane (iC4)", "formula": "iC4H10", "mw": 58.123, "tc": 734.1, "pc": 527.9},
+    {"id": "nc4", "name": "n-Butane (nC4)", "formula": "nC4H10", "mw": 58.123, "tc": 765.3, "pc": 550.6},
+    {"id": "ic5", "name": "i-Pentane (iC5)", "formula": "iC5H12", "mw": 72.150, "tc": 828.8, "pc": 490.4},
+    {"id": "nc5", "name": "n-Pentane (nC5)", "formula": "nC5H12", "mw": 72.150, "tc": 845.4, "pc": 488.6},
+    {"id": "c6", "name": "Hexanes (C6)", "formula": "C6H14", "mw": 86.177, "tc": 913.4, "pc": 436.9},
+    {"id": "n2", "name": "Nitrogen (N2)", "formula": "N2", "mw": 28.013, "tc": 227.3, "pc": 493.1},
+    {"id": "co2", "name": "Carbon Dioxide (CO2)", "formula": "CO2", "mw": 44.010, "tc": 547.6, "pc": 1070.6},
+    {"id": "h2s", "name": "Hydrogen Sulfide (H2S)", "formula": "H2S", "mw": 34.082, "tc": 672.4, "pc": 1306.0},
+    {"id": "c7plus", "name": "Heptanes Plus (C7+)", "formula": "C7+", "mw": 145.0, "tc": 1050.0, "pc": 380.0},
 ]
 
-# Composition Presets
 COMPOSITION_PRESETS = {
     "Dry Gas (Standard)": [0.890, 0.040, 0.015, 0.004, 0.006, 0.002, 0.002, 0.003, 0.018, 0.015, 0.000, 0.005],
     "Wet / Condensate Gas": [0.720, 0.080, 0.045, 0.012, 0.018, 0.008, 0.010, 0.012, 0.010, 0.020, 0.005, 0.060],
@@ -39,7 +172,10 @@ COMPOSITION_PRESETS = {
     "High Nitrogen Gas": [0.750, 0.030, 0.010, 0.002, 0.003, 0.001, 0.001, 0.002, 0.180, 0.015, 0.000, 0.006],
 }
 
-# --- PURE PYTHON PVT & EOS CALCULATIONS ---
+
+# ==============================================================================
+# 3. THERMODYNAMIC & PETROLEUM CALCULATIONS ENGINE
+# ==============================================================================
 
 def calculate_z_factor_hall_yarborough(p_pr, t_pr):
     if p_pr <= 0 or t_pr <= 0:
@@ -158,8 +294,6 @@ def calculate_lee_gonzalez_viscosity(p, t_deg_f, z, gas_sg):
     return max(0.001, mu_g)
 
 
-# --- BLACK OIL CORRELATIONS ---
-
 def calculate_black_oil(api, gas_sg, rsi, temp_f, p_psia, method="standing"):
     gamma_o = 141.5 / (api + 131.5)
     t_r = temp_f + 459.67
@@ -177,7 +311,6 @@ def calculate_black_oil(api, gas_sg, rsi, temp_f, p_psia, method="standing"):
             rs = rsi
             f_term = rsi * ((gas_sg / gamma_o)**0.5) + 1.25 * temp_f
             bob = 0.972 + 0.000147 * (f_term**1.175)
-            # Undersaturated oil compressibility (Vasquez-Beggs)
             co = (5 * rsi + 17.2 * temp_f - 1180 * gas_sg + 12.61 * api - 1433) / (p_psia * 105)
             co = max(1e-6, co)
             bo = bob * math.exp(-co * (p_psia - pb))
@@ -198,10 +331,9 @@ def calculate_black_oil(api, gas_sg, rsi, temp_f, p_psia, method="standing"):
             co = max(1e-6, co)
             bo = bob * math.exp(-co * (p_psia - pb))
 
-    else:  # Fallback to Standing
+    else:
         return calculate_black_oil(api, gas_sg, rsi, temp_f, p_psia, "standing")
 
-    # Oil density
     density_lb_ft3 = (62.4 * gamma_o + 0.0136 * rs * gas_sg) / max(0.5, bo)
 
     return {
@@ -211,8 +343,6 @@ def calculate_black_oil(api, gas_sg, rsi, temp_f, p_psia, method="standing"):
         "oilDensity": round(density_lb_ft3, 2)
     }
 
-
-# --- IPR CALCULATIONS ---
 
 def calculate_ipr(k_md, h_ft, pr_psia, re_ft, rw_ft, skin, mu_cp, bo_rb_stb, pb_psia, target_pwf_psia, use_vogel=True, is_field=True):
     ln_ratio = math.log(max(10, re_ft) / max(0.05, rw_ft))
@@ -245,7 +375,6 @@ def calculate_ipr(k_md, h_ft, pr_psia, re_ft, rw_ft, skin, mu_cp, bo_rb_stb, pb_
     delta_p_skin = (q_target_field / max(1e-5, j_ideal)) * (skin / ln_ratio)
     fe = max(0.0, (drawdown - delta_p_skin) / drawdown) if drawdown > 0 else 1.0
 
-    # Display conversions
     q_factor = 1.0 if is_field else 0.158987
     p_factor = 1.0 if is_field else 0.0689476
     j_factor = 1.0 if is_field else 2.30588
@@ -270,15 +399,27 @@ def calculate_ipr(k_md, h_ft, pr_psia, re_ft, rw_ft, skin, mu_cp, bo_rb_stb, pb_
 
 
 # ==============================================================================
-# STREAMLIT UI LAYOUT & CONTROLS
+# 4. APP HEADER & NAVIGATION
 # ==============================================================================
 
-# Sidebar Header & Module Switcher
-st.sidebar.image("https://img.icons8.com/color/96/petroleum-press.png", width=64)
-st.sidebar.title("Petroleum Suite v3.2")
-st.sidebar.caption("Reservoir PVT & Well IPR Engine")
+st.markdown("""
+<div class="header-card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 class="header-title">⛽ Petroleum Engineering Suite <span class="amber-badge">v3.2</span></h1>
+            <p class="header-subtitle">Reservoir PVT Thermodynamics & Well Inflow Performance Engine</p>
+        </div>
+        <div>
+            <span class="emerald-badge">⚡ Live Calculation Engine</span>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-unit_system = st.sidebar.radio("Unit System", ["Field Units (psia, °F)", "SI Units (bar, °C)"], index=0)
+# Sidebar Configuration
+st.sidebar.title("⚙️ Workspace Controls")
+
+unit_system = st.sidebar.radio("Unit System", ["Field Units (psia, °F, STB/d)", "SI Metric Units (bar, °C, m³/d)"], index=0)
 is_field = "Field" in unit_system
 
 p_unit = "psia" if is_field else "bar"
@@ -286,17 +427,20 @@ t_unit = "°F" if is_field else "°C"
 q_unit = "STB/d" if is_field else "m³/d"
 gas_q_unit = "Mscf/d" if is_field else "std m³/d"
 
-app_mode = st.sidebar.selectbox("Select Analysis Module", ["1. Reservoir Fluid PVT Properties", "2. Fluid Flow & Well IPR Analysis"])
+app_mode = st.sidebar.selectbox("Analysis Module", [
+    "1. Reservoir Fluid PVT Properties",
+    "2. Fluid Flow & Well IPR Analysis"
+])
 
-# --- MODULE 1: PVT PROPERTIES ---
+
+# ==============================================================================
+# MODULE 1: PVT PROPERTIES & EOS CALCULATOR
+# ==============================================================================
 if "PVT" in app_mode:
-    st.title("⛽ Reservoir Fluid PVT Properties Calculator")
-    st.markdown("Calculate real gas compressibility ($Z$), density, formation volume factor ($B_g$), viscosity, and crude oil Black Oil correlations.")
-
     fluid_type = st.sidebar.radio("Fluid Type", ["Natural Gas", "Crude Oil (Black Oil)"])
 
     if fluid_type == "Natural Gas":
-        st.sidebar.subheader("Reservoir Conditions")
+        st.sidebar.subheader("Thermodynamic Controls")
         p_input = st.sidebar.number_input(f"Pressure ({p_unit})", min_value=14.7 if is_field else 1.0, max_value=15000.0, value=3000.0 if is_field else 206.8, step=100.0)
         t_input = st.sidebar.number_input(f"Temperature ({t_unit})", min_value=60.0 if is_field else 15.0, max_value=400.0, value=180.0 if is_field else 82.2, step=5.0)
 
@@ -304,35 +448,40 @@ if "PVT" in app_mode:
         t_f = t_input if is_field else (t_input * 9/5 + 32)
         t_r = t_f + 459.67
 
-        st.sidebar.subheader("EOS & Correlation Solvers")
-        eos_method = st.sidebar.selectbox("Z-Factor EOS", ["Hall-Yarborough (1973)", "Dranchuk-Abu Kassem (1975)"])
-        ppc_method = st.sidebar.selectbox("Pseudo-Critical Method", ["Kay's Compositional Mixing Rule", "Standing Dry Gas Correlation", "Standing Gas Condensate"])
+        eos_method = st.sidebar.selectbox("Z-Factor EOS Method", ["Hall-Yarborough (1973)", "Dranchuk-Abu Kassem (1975)"])
+        ppc_method = st.sidebar.selectbox("Pseudo-Critical Method", ["Kay's Compositional Rule", "Standing Dry Gas", "Standing Gas Condensate"])
 
-        # Gas Composition Table
-        st.subheader("Gas Composition & Properties")
+        # Main Workspace Top Tabs
+        tab_summary, tab_comp, tab_charts, tab_eqns = st.tabs([
+            "📊 PVT Metrics & Results", 
+            "🧪 Gas Composition Analysis", 
+            "📈 Sensitivity & EOS Charts", 
+            "📐 Theoretical Equations"
+        ])
 
-        preset_choice = st.selectbox("Load Gas Composition Preset", list(COMPOSITION_PRESETS.keys()))
-        selected_preset = COMPOSITION_PRESETS[preset_choice]
+        with tab_comp:
+            st.subheader("Gas Component Breakdown")
+            preset_choice = st.selectbox("Load Standard Preset", list(COMPOSITION_PRESETS.keys()))
+            selected_preset = COMPOSITION_PRESETS[preset_choice]
 
-        comp_df = pd.DataFrame({
-            "Component": [c["name"] for c in GAS_COMPONENTS],
-            "Formula": [c["formula"] for c in GAS_COMPONENTS],
-            "Mole Fraction (y_i)": selected_preset,
-            "MW (lb/mol)": [c["mw"] for c in GAS_COMPONENTS],
-            "Tc (°R)": [c["tc"] for c in GAS_COMPONENTS],
-            "Pc (psia)": [c["pc"] for c in GAS_COMPONENTS],
-        })
+            comp_df = pd.DataFrame({
+                "Component": [c["name"] for c in GAS_COMPONENTS],
+                "Formula": [c["formula"] for c in GAS_COMPONENTS],
+                "Mole Fraction (y_i)": selected_preset,
+                "MW (lb/mol)": [c["mw"] for c in GAS_COMPONENTS],
+                "Tc (°R)": [c["tc"] for c in GAS_COMPONENTS],
+                "Pc (psia)": [c["pc"] for c in GAS_COMPONENTS],
+            })
 
-        edited_df = st.data_editor(comp_df, num_rows="fixed", use_container_width=True)
+            edited_df = st.data_editor(comp_df, num_rows="fixed", use_container_width=True)
+            y_vals = edited_df["Mole Fraction (y_i)"].values
+            total_y = sum(y_vals)
 
-        y_vals = edited_df["Mole Fraction (y_i)"].values
-        total_y = sum(y_vals)
+            if abs(total_y - 1.0) > 0.001:
+                st.warning(f"⚠️ Total mole fraction equals {total_y:.4f}. Normalizing automatically to 1.0000.")
+                y_vals = y_vals / total_y
 
-        if abs(total_y - 1.0) > 0.001:
-            st.warning(f"⚠️ Total mole fraction sums to {total_y:.4f}. Normalizing to 1.0000 for accurate thermodynamics.")
-            y_vals = y_vals / total_y
-
-        # Calculate Mixture Properties
+        # Calculations
         mw_mix = sum(y_vals * comp_df["MW (lb/mol)"].values)
         gas_sg = mw_mix / AIR_MOL_WEIGHT
 
@@ -356,33 +505,52 @@ if "PVT" in app_mode:
         bg_ft3_scf = 0.02827 * z_val * t_r / p_psia
         mu_g = calculate_lee_gonzalez_viscosity(p_psia, t_f, z_val, gas_sg)
 
-        # Metric Displays
-        col1, col2, col3, col4, col5 = st.columns(5)
-        col1.metric("Gas Gravity (γ_g)", f"{gas_sg:.4f}", "Air = 1.0")
-        col2.metric("Compressibility (Z)", f"{z_val:.4f}", f"Ppr={p_pr:.2f}, Tpr={t_pr:.2f}")
-        col3.metric(f"Gas Density ({'lb/ft³' if is_field else 'kg/m³'})", f"{rho_disp:.2f}")
-        col4.metric(f"Formation Vol Factor Bg ({'ft³/scf' if is_field else 'm³/m³'})", f"{bg_ft3_scf:.5f}")
-        col5.metric("Gas Viscosity (cP)", f"{mu_g:.4f}")
+        with tab_summary:
+            st.subheader("Real Gas Thermodynamic State")
 
-        # Sensitivity Chart
-        st.subheader("📊 PVT Sensitivity Charts vs Pressure")
-        p_range = np.linspace(100, 8000, 50)
-        z_curve = [calculate_z_factor_hall_yarborough(p / ppc, t_pr) if "Hall" in eos_method else calculate_z_factor_dranchuk_abu_kassem(p / ppc, t_pr) for p in p_range]
-        bg_curve = [0.02827 * z * t_r / p for p, z in zip(p_range, z_curve)]
-        mu_curve = [calculate_lee_gonzalez_viscosity(p, t_f, z, gas_sg) for p, z in zip(p_range, z_curve)]
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Compressibility Z-Factor", f"{z_val:.4f}", f"EOS: {eos_method.split()[0]}")
+            c2.metric("Gas Gravity (γ_g)", f"{gas_sg:.4f}", f"MW: {mw_mix:.2f} lb/mol")
+            c3.metric(f"Gas Density ({'lb/ft³' if is_field else 'kg/m³'})", f"{rho_disp:.2f}")
+            c4.metric(f"FVF Bg ({'ft³/scf' if is_field else 'm³/m³'})", f"{bg_ft3_scf:.5f}")
 
-        p_disp = p_range if is_field else p_range * 0.0689476
+            st.divider()
 
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=p_disp, y=z_curve, mode="lines", name="Z-Factor", line=dict(color="#f59e0b", width=3)))
-        fig.update_layout(title="Compressibility Factor (Z) vs Pressure", xaxis_title=f"Pressure ({p_unit})", yaxis_title="Z-Factor", template="plotly_dark")
-        st.plotly_chart(fig, use_container_width=True)
+            c5, c6, c7, c8 = st.columns(4)
+            c5.metric("Gas Viscosity", f"{mu_g:.4f} cP", "Lee-Gonzalez Method")
+            c6.metric("Pseudo-Critical T_pc", f"{tpc:.1f} °R", f"T_pr = {t_pr:.3f}")
+            c7.metric("Pseudo-Critical P_pc", f"{ppc:.1f} psia", f"P_pr = {p_pr:.3f}")
+            c8.metric("Operating Pressure", f"{p_input:.1f} {p_unit}", f"{t_input:.1f} {t_unit}")
+
+        with tab_charts:
+            st.subheader("Sensitivity & PVT Curves vs Pressure")
+
+            p_range = np.linspace(100, 8000, 60)
+            z_curve = [calculate_z_factor_hall_yarborough(p / ppc, t_pr) if "Hall" in eos_method else calculate_z_factor_dranchuk_abu_kassem(p / ppc, t_pr) for p in p_range]
+            bg_curve = [0.02827 * z * t_r / p for p, z in zip(p_range, z_curve)]
+            mu_curve = [calculate_lee_gonzalez_viscosity(p, t_f, z, gas_sg) for p, z in zip(p_range, z_curve)]
+            p_disp = p_range if is_field else p_range * 0.0689476
+
+            fig = make_subplots(rows=1, cols=3, subplot_titles=("Z-Factor vs Pressure", "Formation Volume Factor Bg", "Gas Viscosity μ_g"))
+
+            fig.add_trace(go.Scatter(x=p_disp, y=z_curve, mode="lines", name="Z-Factor", line=dict(color="#f59e0b", width=3)), row=1, col=1)
+            fig.add_trace(go.Scatter(x=p_disp, y=bg_curve, mode="lines", name="Bg (ft³/scf)", line=dict(color="#3b82f6", width=3)), row=1, col=2)
+            fig.add_trace(go.Scatter(x=p_disp, y=mu_curve, mode="lines", name="Viscosity (cP)", line=dict(color="#10b981", width=3)), row=1, col=3)
+
+            fig.update_layout(template="plotly_dark", height=450, showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
+
+        with tab_eqns:
+            st.subheader("Thermodynamic Governing Equations")
+            st.latex(r"Z = \frac{p \cdot V}{n \cdot R \cdot T}")
+            st.latex(r"B_g = 0.02827 \cdot \frac{Z \cdot T}{p} \quad \text{ft}^3/\text{scf}")
+            st.latex(r"\rho_g = \frac{p \cdot M_w}{Z \cdot R \cdot T}")
 
     else:
-        # Black Oil Mode
-        st.sidebar.subheader("Black Oil Inputs")
+        # Crude Oil (Black Oil)
+        st.sidebar.subheader("Black Oil Parameters")
         api = st.sidebar.number_input("Oil Gravity (°API)", min_value=10.0, max_value=60.0, value=35.0, step=1.0)
-        gas_sg = st.sidebar.number_input("Gas Gravity (Air=1.0)", min_value=0.5, max_value=1.5, value=0.75, step=0.05)
+        gas_sg = st.sidebar.number_input("Gas Specific Gravity (Air=1.0)", min_value=0.5, max_value=1.5, value=0.75, step=0.05)
         rsi = st.sidebar.number_input("Initial GOR (scf/STB)", min_value=0.0, max_value=5000.0, value=500.0, step=50.0)
         temp_f = st.sidebar.number_input(f"Temperature ({t_unit})", min_value=60.0 if is_field else 15.0, max_value=300.0, value=180.0 if is_field else 82.2)
         p_input = st.sidebar.number_input(f"Pressure ({p_unit})", min_value=100.0, max_value=10000.0, value=3000.0)
@@ -395,18 +563,20 @@ if "PVT" in app_mode:
 
         bo_res = calculate_black_oil(api, gas_sg, rsi, t_f, p_psia, m_key)
 
+        st.subheader("🛢️ Crude Oil Black Oil Results")
+
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Bubble Point (P_b)", f"{bo_res['bubblePoint']} psia")
+        col1.metric("Bubble Point (P_b)", f"{bo_res['bubblePoint']} psia", f"Suite: {method.split()[0]}")
         col2.metric("Solution GOR (R_s)", f"{bo_res['solutionGor']} scf/STB")
         col3.metric("Oil FVF (B_o)", f"{bo_res['formationVolumeFactor']} rb/STB")
         col4.metric("Oil Density", f"{bo_res['oilDensity']} lb/ft³")
 
-# --- MODULE 2: IPR ANALYSIS ---
-else:
-    st.title("📉 Reservoir Fluid Flow & Well IPR Engine")
-    st.markdown("Simulate well inflow performance relationships, skin damage effect ($S$), productivity index ($J$), and Absolute Open Flow (AOF) potential.")
 
-    st.sidebar.subheader("Reservoir & Well Parameters")
+# ==============================================================================
+# MODULE 2: RESERVOIR FLUID FLOW & WELL IPR ANALYSIS
+# ==============================================================================
+else:
+    st.sidebar.subheader("Reservoir Flow Controls")
     k = st.sidebar.number_input("Permeability k (md)", min_value=0.1, max_value=5000.0, value=50.0)
     h = st.sidebar.number_input(f"Pay Thickness h ({'ft' if is_field else 'm'})", min_value=1.0, max_value=500.0, value=50.0)
     pr = st.sidebar.number_input(f"Reservoir Pressure ({p_unit})", min_value=100.0, max_value=10000.0, value=3000.0)
@@ -416,33 +586,63 @@ else:
     mu = st.sidebar.number_input("Fluid Viscosity μ (cP)", min_value=0.01, max_value=100.0, value=1.2)
     bo = st.sidebar.number_input("Formation Vol Factor B_o (rb/STB)", min_value=1.0, max_value=3.0, value=1.25)
     pb = st.sidebar.number_input(f"Bubble Point P_b ({p_unit})", min_value=14.7, max_value=10000.0, value=2200.0)
-    pwf_target = st.sidebar.number_input(f"Target Operating P_wf ({p_unit})", min_value=0.0, max_value=pr, value=1500.0)
+    pwf_target = st.sidebar.number_input("Operating Target P_wf ({p_unit})", min_value=0.0, max_value=pr, value=1500.0)
 
-    ipr_res = calculate_ipr(k, h, pr, re, rw, skin, mu, bo, pb, pwf_target, use_vogel=True, is_field=is_field)
+    pr_psia = pr if is_field else pr / 0.0689476
+    pb_psia = pb if is_field else pb / 0.0689476
+    pwf_target_psia = pwf_target if is_field else pwf_target / 0.0689476
 
-    # IPR Summary Metrics
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric(f"Productivity Index (J)", f"{ipr_res['productivityIndex']} {'STB/d/psi' if is_field else 'm³/d/bar'}")
-    c2.metric(f"Max AOF Potential (q_max)", f"{ipr_res['qMaxAof']} {q_unit}")
-    c3.metric(f"Rate at Target Pwf", f"{ipr_res['qTarget']} {q_unit}")
-    c4.metric("Flow Efficiency (FE)", f"{ipr_res['flowEfficiency']}%")
+    ipr_res = calculate_ipr(k, h, pr_psia, re, rw, skin, mu, bo, pb_psia, pwf_target_psia, use_vogel=True, is_field=is_field)
 
-    # IPR Plotly Curve
-    st.subheader("📉 Inflow Performance Relationship (IPR) Curves")
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=ipr_res['q_actual_list'], y=ipr_res['pwf_disp_list'], mode="lines", name=f"Actual IPR (S = {skin})", line=dict(color="#10b981", width=3.5)))
-    fig.add_trace(go.Scatter(x=ipr_res['q_ideal_list'], y=ipr_res['pwf_disp_list'], mode="lines", name="Ideal IPR (S = 0)", line=dict(color="#94a3b8", width=2, dash="dash")))
+    tab_ipr_summary, tab_ipr_curves, tab_ipr_eqns = st.tabs([
+        "📊 Inflow Performance Metrics", 
+        "📉 IPR & Skin Sensitivity Curves", 
+        "📐 Vogel & Darcy Equations"
+    ])
 
-    fig.update_layout(
-        title="Well Bottomhole Pressure (P_wf) vs Production Rate (q)",
-        xaxis_title=f"Production Rate q ({q_unit})",
-        yaxis_title=f"Flowing Pressure P_wf ({p_unit})",
-        template="plotly_dark",
-        hovermode="x unified"
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    with tab_ipr_summary:
+        st.subheader("Well Deliverability & Inflow Results")
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Productivity Index (J)", f"{ipr_res['productivityIndex']} {'STB/d/psi' if is_field else 'm³/d/bar'}")
+        c2.metric("Max AOF Potential (q_max)", f"{ipr_res['qMaxAof']} {q_unit}")
+        c3.metric("Rate at Target Pwf", f"{ipr_res['qTarget']} {q_unit}")
+        c4.metric("Flow Efficiency (FE)", f"{ipr_res['flowEfficiency']}%")
+
+        st.divider()
+
+        c5, c6, c7, c8 = st.columns(4)
+        c5.metric("Total Pressure Drawdown", f"{ipr_res['drawdown']} {p_unit}")
+        c6.metric("Skin Pressure Drop (ΔP_skin)", f"{ipr_res['skinPressureDrop']} {p_unit}")
+        c7.metric("Skin Damage S", f"{skin:+.1f}", "Stimulated" if skin < 0 else "Damaged")
+        c8.metric("Operating P_wf", f"{pwf_target:.1f} {p_unit}")
+
+    with tab_ipr_curves:
+        st.subheader("Inflow Performance Curves")
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=ipr_res['q_actual_list'], y=ipr_res['pwf_disp_list'], mode="lines", name=f"Actual IPR (S = {skin})", line=dict(color="#10b981", width=3.5)))
+        fig.add_trace(go.Scatter(x=ipr_res['q_ideal_list'], y=ipr_res['pwf_disp_list'], mode="lines", name="Ideal IPR (S = 0)", line=dict(color="#94a3b8", width=2, dash="dash")))
+
+        # Target operating point
+        fig.add_trace(go.Scatter(x=[ipr_res['qTarget']], y=[pwf_target], mode="markers+text", name="Operating Point", marker=dict(color="#f59e0b", size=12), text=["Operating Point"], textposition="top right"))
+
+        fig.update_layout(
+            title=f"Flowing Pressure (P_wf) vs Production Rate (q) in {q_unit}",
+            xaxis_title=f"Production Rate q ({q_unit})",
+            yaxis_title=f"Flowing Bottomhole Pressure P_wf ({p_unit})",
+            template="plotly_dark",
+            height=500,
+            hovermode="x unified"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    with tab_ipr_eqns:
+        st.subheader("Inflow Governing Equations")
+        st.latex(r"J = \frac{0.00708 \cdot k \cdot h}{\mu \cdot B_o \cdot \left( \ln\frac{r_e}{r_w} + S \right)}")
+        st.latex(r"\frac{q}{q_{\text{max}}} = 1 - 0.2 \left( \frac{p_{wf}}{p_r} \right) - 0.8 \left( \frac{p_{wf}}{p_r} \right)^2")
 
 
-# --- MANUAL & DISCLAIMER TAB AT FOOTER ---
+# Footer
 st.divider()
-st.caption("Petroleum Engineering Suite v3.2 • Streamlit & Python Deployment Edition • For Estimation Purposes Only")
+st.caption("Petroleum Engineering Suite v3.2 • Custom Streamlit Design Matching React Preview • For Estimation & Analysis")
